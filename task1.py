@@ -15,9 +15,22 @@ schema = StructType([
 ])
 
 # Read streaming data from socket
+lines = spark.readStream \
+    .format("socket") \
+    .option("host", "localhost") \
+    .option("port", 9999) \
+    .load()
 
 # Parse JSON data into columns using the defined schema
+parsed_df = lines.select(from_json(col("value"), schema).alias("data")).select("data.*")
 
-# Print parsed data to the CSV files
+# Print parsed data to console / write to CSV
+query = parsed_df.writeStream \
+    .outputMode("append") \
+    .format("csv") \
+    .option("path", "outputs/task_1") \
+    .option("header", "true") \
+    .option("checkpointLocation", "outputs/task_1/checkpoint") \
+    .start()
 
 query.awaitTermination()
